@@ -3,7 +3,7 @@
 Official Go client for the **ClawPro** Instagram outbound API — connect sending accounts, run competitor-audience campaigns, score leads, manage webhooks, and read usage.
 
 ```bash
-go get github.com/AyoAlfonso/clawpro-go@latest
+go get github.com/Bojale-Labs/clawpro-go@latest
 ```
 
 Requires Go 1.21+. Get an API key from the [developer portal](https://tryclawpro.com) → **API & Developers → API Keys**.
@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"os"
 
-	clawpro "github.com/AyoAlfonso/clawpro-go"
+	clawpro "github.com/Bojale-Labs/clawpro-go"
 )
 
 func main() {

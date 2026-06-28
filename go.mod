@@ -1,3 +1,3 @@
-module github.com/AyoAlfonso/clawpro-go
+module github.com/Bojale-Labs/clawpro-go
 
 go 1.21
