@@ -9,6 +9,9 @@ package clawpro
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -489,4 +492,45 @@ func (c *Client) Logs(ctx context.Context, f LogFilter) ([]RequestLog, error) {
 		Logs []RequestLog `json:"logs"`
 	}
 	return r.Logs, c.do(ctx, http.MethodGet, "/logs", nil, f.values(), &r)
+}
+
+// ─────────────────────────── Webhook verification ────────────────────────────
+
+// VerifyWebhook verifies a ClawPro webhook's HMAC signature (the
+// X-Souk-Signature header). payload is the raw request body; tolerance rejects
+// signatures older than the given duration (0 disables). Returns true if valid.
+func VerifyWebhook(payload []byte, signature, secret string, tolerance time.Duration) bool {
+	var t, v1 string
+	for _, p := range strings.Split(signature, ",") {
+		kv := strings.SplitN(strings.TrimSpace(p), "=", 2)
+		if len(kv) != 2 {
+			continue
+		}
+		switch kv[0] {
+		case "t":
+			t = kv[1]
+		case "v1":
+			v1 = kv[1]
+		}
+	}
+	if t == "" || v1 == "" {
+		return false
+	}
+	ts, err := strconv.ParseInt(t, 10, 64)
+	if err != nil {
+		return false
+	}
+	if tolerance > 0 {
+		d := time.Since(time.Unix(ts, 0))
+		if d < 0 {
+			d = -d
+		}
+		if d > tolerance {
+			return false
+		}
+	}
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(t + "." + string(payload)))
+	expected := hex.EncodeToString(mac.Sum(nil))
+	return hmac.Equal([]byte(expected), []byte(v1))
 }
