@@ -369,6 +369,42 @@ func (c *Client) UpdateLead(ctx context.Context, id, status string) (*Lead, erro
 	return &r.Lead, nil
 }
 
+// IngestLead is a lead pushed in from your own scraper — who to DM + the
+// engagement context that feeds the DM.
+type IngestLead struct {
+	Username       string  `json:"username"`
+	EngagedWith    string  `json:"engagedWith,omitempty"`
+	EngagementType string  `json:"engagementType,omitempty"`
+	Comment        *string `json:"comment,omitempty"`
+	FullName       *string `json:"fullName,omitempty"`
+}
+
+// AddLeadsResult summarizes a bulk lead push.
+type AddLeadsResult struct {
+	Created int    `json:"created"`
+	Skipped int    `json:"skipped"`
+	Total   int    `json:"total"`
+	Status  string `json:"status"`
+}
+
+// AddLeads pushes externally-sourced leads into a campaign in bulk
+// (bring-your-own-scraper). Deduped on username; up to 500. score routes them
+// through the ICP scorer first.
+func (c *Client) AddLeads(ctx context.Context, campaignID string, leads []IngestLead, score bool) (*AddLeadsResult, error) {
+	q := url.Values{}
+	if score {
+		q.Set("score", "1")
+	}
+	var r AddLeadsResult
+	return &r, c.do(ctx, http.MethodPost, "/campaigns/"+campaignID+"/leads", leads, q, &r)
+}
+
+// ReplyToLead sends a reply / follow-up to a lead in its existing thread
+// (inbox-write — manage the conversation via API).
+func (c *Client) ReplyToLead(ctx context.Context, leadID, text string) error {
+	return c.do(ctx, http.MethodPost, "/leads/"+leadID+"/reply", map[string]string{"text": text}, nil, nil)
+}
+
 // ────────────────────────────── Webhooks ────────────────────────────────────
 
 func (c *Client) ListWebhooks(ctx context.Context) ([]Webhook, error) {
